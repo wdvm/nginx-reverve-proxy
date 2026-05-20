@@ -119,7 +119,7 @@ docker compose exec aaa wget -qO- http://127.0.0.1:3000/health
 
 ### HTTPS (port 443)
 
-Port **443** is published, but TLS is not configured yet. NGINX uses `ssl reject_handshake` so connections fail until you add certificates (see [SSL with Let's Encrypt](#ssl-with-lets-encrypt-later) below).
+Port **443** is published on the host, but NGINX does not listen on 443 until you enable the SSL server block below. Until then, use HTTP on port 80 (see [SSL with Let's Encrypt](#ssl-with-lets-encrypt-later)).
 
 ## How routing works
 
@@ -226,7 +226,7 @@ For production domains (not `.localhost`), common approaches:
    ```
 
 5. Uncomment and adapt the SSL `server` block in `nginx/conf.d/aaa.conf`.
-6. Remove the `listen 443 ssl reject_handshake on;` placeholder from the HTTP server block.
+6. Uncomment the SSL `server` block in `nginx/conf.d/aaa.conf` and mount your certificate paths.
 7. Add an HTTP → HTTPS redirect server block (example included as comments in `aaa.conf`).
 
 ### Option B: Traefik or Caddy in front
