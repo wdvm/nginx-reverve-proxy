@@ -204,44 +204,32 @@ curl -s http://bbb.localhost/
 - Never `proxy_pass` to `localhost` inside NGINX; always use the **Compose service name**.
 - Do not publish app ports on the host unless you need direct debugging.
 
-## SSL with Let's Encrypt (later)
+## SSL with Let's Encrypt (nachapa)
 
-For production domains (not `.localhost`), common approaches:
+O `nachapa.conf` já expõe `/.well-known/acme-challenge/` na porta 80. O HTTPS continua no certificado autoassinado até o Certbot emitir o cert.
 
-### Option A: Certbot sidecar or host Certbot
-
-1. Point real DNS (e.g. `aaa.example.com`) to your server.
-2. Temporarily allow HTTP-01 on port 80, or use DNS-01 for wildcards.
-3. Obtain certs:
-
-   ```bash
-   certbot certonly --webroot -w /var/www/certbot -d aaa.example.com
-   ```
-
-4. Mount certificates into the NGINX container:
-
-   ```yaml
-   volumes:
-     - ./certbot/conf:/etc/letsencrypt:ro
-   ```
-
-5. Uncomment and adapt the SSL `server` block in `nginx/conf.d/aaa.conf`.
-6. Uncomment the SSL `server` block in `nginx/conf.d/aaa.conf` and mount your certificate paths.
-7. Add an HTTP → HTTPS redirect server block (example included as comments in `aaa.conf`).
-
-### Option B: Traefik or Caddy in front
-
-Let a dedicated edge proxy handle ACME automatically, with NGINX as an internal router — useful when you have many services.
-
-### Option C: Docker Compose + nginx-proxy / acme-companion
-
-Community images automate vhost discovery and certificate renewal from container labels.
-
-**Renewal:** schedule `certbot renew` (cron or systemd timer) and reload NGINX after renewal:
+Pré-requisitos na EC2: DNS A de `nachapa.2ulabs.com.br` no IP da instância; Security Group com **80 e 443** abertos.
 
 ```bash
+# Na pasta do nginx-proxy
+mkdir -p certbot/www certbot/conf
+docker compose up -d nginx
 docker compose exec nginx nginx -s reload
+
+ACME_EMAIL=voce@seudominio.com ./scripts/letsencrypt-nachapa.sh
 ```
+
+O script emite o cert, troca `nachapa.conf` para `fullchain.pem` / `privkey.pem` e recarrega o Nginx.
+
+Renovação (crontab):
+
+```bash
+15 3,15 * * * /caminho/nginx-proxy/scripts/letsencrypt-renew.sh >>/var/log/letsencrypt-renew.log 2>&1
+```
+
+Não commite `certbot/conf/` (chaves privadas).
+
+## Environment variables
 
 ## Environment variables
 
