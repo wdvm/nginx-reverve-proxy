@@ -8,6 +8,9 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       aaa:
         condition: service_healthy
@@ -39,6 +42,20 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    restart: unless-stopped
+
+  edp:
+    container_name: espacodpets-web
+    image: espacodpets:latest
+    expose:
+      - "3001"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED="1"
+      - PORT=3001
+      - HOSTNAME=0.0.0.0
+    networks:
+      - proxy
     restart: unless-stopped
 
 networks:
